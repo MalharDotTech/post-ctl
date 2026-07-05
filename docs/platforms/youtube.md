@@ -1,0 +1,79 @@
+# YouTube — behavior contract & setup
+
+What you must know before automating YouTube uploads with postctl. Read all of
+"Non-negotiables" — none of them are postctl limitations; they are platform policy.
+
+## Non-negotiables
+
+| Fact | Consequence |
+|---|---|
+| Unaudited API projects upload **Private only** (projects created after Jul 2020, no appeal path except the audit) | Default flow: upload private → publish manually in YouTube Studio. Apply for the [compliance audit](https://developers.google.com/youtube/v3/guides/quota_and_compliance_audits) early — it unlocks public API uploads. |
+| Quota: 10,000 units/day per GCP project; one upload = 1,600 units | **~6 uploads/day.** Request a quota increase on the audited project if volume demands. |
+| OAuth consent screen in **Testing** mode ⇒ refresh tokens die after 7 days | Consent screen MUST be published to **Production** before the team logs in. |
+| Title ≤100 chars, description ≤5,000 bytes, no `<` or `>` in either | `postctl validate` enforces offline, before quota spend. |
+
+## One-time setup (admin, ~30 min)
+
+1. [console.cloud.google.com](https://console.cloud.google.com) → create project (e.g. `isha-postctl`).
+2. APIs & Services → Library → enable **YouTube Data API v3**.
+3. APIs & Services → OAuth consent screen:
+   - User type **External**, fill app name/support email.
+   - Scopes: `youtube.upload`, `youtube.readonly`.
+   - **Publish to Production** (do NOT stay in Testing — see table above).
+4. Credentials → Create credentials → OAuth client ID → type **Desktop app**.
+   - Note the client ID and client secret. Google treats desktop-app secrets
+     as non-confidential, but postctl still stores the secret in the keychain.
+5. Redirect URI `http://localhost:8917` — Google desktop clients accept any
+   localhost port automatically; nothing to register.
+6. Share client ID + secret with each operator (password manager, not chat).
+7. In parallel: submit the compliance-audit questionnaire — public uploads
+   depend on it.
+
+## Per-operator setup (~2 min)
+
+Each team member, on their own machine:
+
+```sh
+postctl auth login youtube --account isha \
+  --client-id <ID> --client-secret <SECRET>
+```
+
+Browser opens → pick the Google account that has access to the channel
+(**for Brand Accounts: pick the brand account at the chooser, not your
+personal account**) → done. Tokens live in the operator's own keychain and
+refresh silently forever. Re-login is only needed if consent is revoked.
+
+## Daily use
+
+```sh
+# Pre-flight (offline, free)
+postctl validate "Video title" --media ./talk.mp4 --account isha
+
+# Upload (private by default; result includes Studio link for publish)
+postctl post "Video title" --media ./talk.mp4 \
+  --description ./description.txt --tags "sadhguru,wisdom" --account isha
+
+# Post-audit, direct public uploads:
+postctl post "Video title" --media ./talk.mp4 --privacy public --account isha
+
+# Token dashboard
+postctl auth status
+```
+
+`--description` accepts a literal string or a path to a text file.
+Result JSON always includes `url` (watch page) and `studioUrl` (edit/publish).
+If you request `--privacy public` on an unaudited project, the upload still
+lands Private and the result carries a `warning` saying so.
+
+## Troubleshooting
+
+- **`auth login` fails with "No refresh_token in response"** — consent screen
+  is in Testing, or this Google account previously granted the app. Publish
+  consent screen to Production, revoke access at
+  [myaccount.google.com/permissions](https://myaccount.google.com/permissions), retry.
+- **`quotaExceeded` (403)** — daily 10k units exhausted (~6 uploads). Resets
+  midnight Pacific. Request increase if recurring.
+- **"No YouTube channel on this Google account"** — the channel is on a Brand
+  Account; re-run `auth login` and pick the brand account at Google's chooser.
+- **Upload stuck/interrupted** — postctl resumes automatically (5 attempts).
+  Exit 1 after that; re-running re-uploads from scratch (a new session).
