@@ -3,7 +3,8 @@
 The missing CLI for social posting. One grammar for YouTube, Instagram,
 Facebook, X, and LinkedIn — built for humans, scripts, CI, and AI agents.
 
-**Status: v0.1.0 — YouTube provider shipped. Instagram/Facebook next.**
+**Status: v0.1.1 — YouTube provider shipped, e2e-verified with real credentials
+([report](docs/testing/e2e-youtube-20260707-report.md)). Instagram/Facebook next.**
 
 ```sh
 # Authenticate once (browser OAuth, tokens in your keychain)
@@ -47,14 +48,14 @@ and exits with a code you can branch on.
 | `auth logout` | Delete stored token |
 | `accounts list\|use\|remove` | Manage named accounts |
 | `post "<text>"` | Publish (`--media`, `--description`, `--tags`, `--privacy`, `--dry-run`) |
-| `validate "<text>"` | Offline pre-flight, exit 1 + structured errors on fail |
+| `validate "<text>"` | Offline pre-flight, exit 1 + structured errors on fail (`--provider <id>` runs it before any account exists; also works on `post --dry-run`) |
 | `providers` | List available providers |
 
 ## Platforms
 
 | Provider | Status | Behavior contract |
 |---|---|---|
-| YouTube | ✅ shipped | [docs/platforms/youtube.md](docs/platforms/youtube.md) — read this first; quota + audit rules |
+| YouTube | ✅ shipped, e2e-verified | [docs/platforms/youtube.md](docs/platforms/youtube.md) — read this first; quota + privacy rules |
 | Instagram | planned | needs media staging (S3/R2) |
 | Facebook Pages | planned | pages only (API policy) |
 | X | planned | pay-per-use API pricing |

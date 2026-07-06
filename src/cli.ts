@@ -6,7 +6,7 @@ import { postCmd, validateCmd } from "./commands/post.ts";
 import { accountsCmd } from "./commands/accounts.ts";
 import { PROVIDERS } from "./provider.ts";
 
-const VERSION = "0.1.0";  // keep in sync with package.json (freshness test)
+const VERSION = "0.1.1";  // keep in sync with package.json (freshness test)
 
 const HELP = `postctl ${VERSION} — social posting for humans and AI agents
 
@@ -21,6 +21,8 @@ Verbs:
   accounts remove <name>   Remove account + token
   post "<text>"            Publish (--media, --description, --tags, --privacy, --dry-run)
   validate "<text>"        Offline pre-flight, no quota spend (--media, …)
+                           validate and post --dry-run accept --provider <id>
+                           to run before any account is configured
   providers                List available providers
 
 Flags:

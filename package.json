@@ -1,6 +1,6 @@
 {
   "name": "postctl",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "The missing CLI for social posting. YouTube, Instagram, Facebook, X, LinkedIn. Built for humans and AI agents.",
   "type": "module",
   "bin": {

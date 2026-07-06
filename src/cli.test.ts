@@ -118,6 +118,26 @@ describe("cli exit-code contract", () => {
     expect(JSON.parse(r.stdout)[0].account).toBe("isha");
   });
 
+  test("validate --provider works with no account configured (e2e finding 1)", () => {
+    const video = makeTempVideo(dir);
+    const bad = run(["validate", "title", "--provider", "youtube", "--output", "json"]);
+    expect(bad.exitCode).toBe(1);
+    expect(JSON.parse(bad.stdout).valid).toBe(false);
+
+    const good = run(["validate", "title", "--provider", "youtube", "--media", video, "--output", "json"]);
+    expect(good.exitCode).toBe(0);
+    expect(JSON.parse(good.stdout).valid).toBe(true);
+  });
+
+  test("post --dry-run --provider works with no account configured", () => {
+    const video = makeTempVideo(dir);
+    const r = run(["post", "title", "--provider", "youtube", "--media", video, "--dry-run", "--output", "json"]);
+    expect(r.exitCode).toBe(0);
+    const doc = JSON.parse(r.stdout);
+    expect(doc.dry_run).toBe(true);
+    expect(doc.provider).toBe("youtube");
+  });
+
   test("auth login without client-id exits 1 naming the flag", () => {
     const r = run(["auth", "login", "youtube", "--account", "new"]);
     expect(r.exitCode).toBe(1);

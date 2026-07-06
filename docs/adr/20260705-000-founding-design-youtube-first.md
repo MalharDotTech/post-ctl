@@ -100,3 +100,16 @@ files keep shell-quoting sane). Capabilities declare `video: required`,
   then request increase.
 - ⚠️ X-first simplicity forfeited: auth engine must be right on the first
   provider. Mitigated by porting frappe-ctl's tested OAuth core.
+
+## Amendment — 2026-07-07 (v0.1.1)
+
+E2E with real Google credentials passed (`docs/testing/e2e-youtube-20260707-report.md`).
+Two corrections to the above:
+
+- **Forced-private was not enforced**: a fresh unaudited project uploaded
+  Public successfully. The rule is real but inconsistently applied — postctl
+  reports the *applied* privacy and warns on downgrade; the audit is a
+  contingency, not a prerequisite. "Default private + Studio link" stays the
+  safe default.
+- `validate` and `post --dry-run` gained `--provider <id>` so offline
+  pre-flight works before any account is configured (e2e finding 1).
