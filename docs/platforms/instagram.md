@@ -8,7 +8,8 @@ Platform policy, not postctl limitations:
 | Fact | Consequence |
 |---|---|
 | Account must be **Business or Creator** | Switch in Instagram app: Settings → Account type. Personal accounts cannot use the API. |
-| **Media required** — no text-only posts | `postctl validate` enforces. Exactly one image or video per post (carousels not yet supported). |
+| **Media required** — no text-only posts | `postctl validate` enforces. 1 media = single post (video → Reel); 2–10 media = carousel (images and/or videos mixable). |
+| **Instagram music library is NOT reachable via API** — app-only feature, no parameter exists | Custom audio must be baked into the video file before posting (subject to IG copyright detection). Reels keep their embedded audio. |
 | Instagram **pulls media from a public HTTPS URL** at publish time | postctl stages local files through your R2/S3 bucket automatically — `postctl staging set` is a prerequisite for `--media`. Already-hosted assets: `--media-url <https://…>`. |
 | Video = **Reels** (MP4 H.264/AAC, 9:16 recommended); images 4:5–1.91:1 aspect | Container errors name these causes. |
 | Token is **60-day sliding**: refreshable after 24h age, dead once expired | postctl auto-refreshes on any use past 30d age ⇒ an account used at least once every 60 days never re-logs. Idle >60d ⇒ exit 4, re-login. |
@@ -52,6 +53,7 @@ Browser opens → log into the Business/Creator account → done.
 postctl validate "Caption text" --media ./photo.jpg --account isha.ig
 postctl post "Caption text" --media ./photo.jpg --account isha.ig
 postctl post "Reel caption" --media ./clip.mp4 --account isha.ig   # published as Reel
+postctl post "Carousel" --media ./a.jpg --media ./b.jpg --media ./c.mp4 --account isha.ig  # 2-10 items
 postctl post "Caption" --media-url https://cdn.example.com/photo.jpg --account isha.ig  # skip staging
 ```
 

@@ -19,6 +19,7 @@ const IMAGE_EXTS = [".jpg", ".jpeg", ".png"];
 const VIDEO_EXTS = [".mp4", ".mov"];
 const MAX_CAPTION_CHARS = 2200;
 const MAX_POLL_ATTEMPTS = 40;   // video processing can take a while
+const MAX_CAROUSEL_ITEMS = 10;
 
 function mediaExt(m: { path?: string; url?: string }): string {
   if (m.path) return extname(m.path).toLowerCase();
@@ -32,12 +33,14 @@ function validate(post: Post): void {
   const errors: string[] = [];
   const media = post.media ?? [];
 
-  if (media.length !== 1) {
-    errors.push("Instagram requires exactly one --media (image or video) — text-only posts don't exist. Carousels: not yet supported.");
-  } else {
-    const m = media[0]!;
+  if (media.length === 0) {
+    errors.push("Instagram requires --media (image or video) — text-only posts don't exist.");
+  } else if (media.length > MAX_CAROUSEL_ITEMS) {
+    errors.push(`Carousel max ${MAX_CAROUSEL_ITEMS} items, got ${media.length}.`);
+  }
+  for (const m of media) {
     if (!isVideo(m) && !isImage(m)) {
-      errors.push(`Unsupported media format '${mediaExt(m)}'. Images: ${IMAGE_EXTS.join(" ")} · Video (Reels): ${VIDEO_EXTS.join(" ")}`);
+      errors.push(`Unsupported media format '${mediaExt(m)}'. Images: ${IMAGE_EXTS.join(" ")} · Video: ${VIDEO_EXTS.join(" ")}`);
     }
   }
   if (post.text.length > MAX_CAPTION_CHARS) {
@@ -60,32 +63,21 @@ function igUserId(ctx: AuthedCtx): string {
   return id;
 }
 
-async function post(ctx: AuthedCtx, p: Post): Promise<PostResult> {
-  validate(p);
-  const user = igUserId(ctx);
-  const m = p.media![0]!;
-  if (!m.url) throw new ValidationError("Media has no staged URL — staging must run before publish.");
-
-  // 1. Create container
-  const params = new URLSearchParams({ caption: p.text });
-  if (isVideo(m)) {
-    params.set("media_type", "REELS");
-    params.set("video_url", m.url);
-  } else {
-    params.set("image_url", m.url);
-  }
-  const createRes = await ctx.fetch(`${IG_GRAPH}/${user}/media`, {
+async function createContainer(ctx: AuthedCtx, user: string, params: URLSearchParams): Promise<string> {
+  const res = await ctx.fetch(`${IG_GRAPH}/${user}/media`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: params.toString(),
   });
-  if (!createRes.ok) {
-    throw new ApiError(`Container create failed (${createRes.status}): ${await errorBody(createRes)}`, createRes.status);
+  if (!res.ok) {
+    throw new ApiError(`Container create failed (${res.status}): ${await errorBody(res)}`, res.status);
   }
-  const container = (await createRes.json() as { id: string }).id;
+  return (await res.json() as { id: string }).id;
+}
 
-  // 2. Poll until FINISHED (bounded) — images are usually instant, Reels
-  // take processing time
+// Poll until FINISHED (bounded) — images are usually instant, video takes
+// processing time
+async function pollContainer(ctx: AuthedCtx, container: string): Promise<void> {
   const delay = ctx.pollDelayMs ?? 5000;
   let status = "IN_PROGRESS";
   for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
@@ -94,21 +86,69 @@ async function post(ctx: AuthedCtx, p: Post): Promise<PostResult> {
       throw new ApiError(`Container status check failed (${res.status}): ${await errorBody(res)}`, res.status);
     }
     status = (await res.json() as { status_code?: string }).status_code ?? "IN_PROGRESS";
-    if (status === "FINISHED") break;
+    if (status === "FINISHED") return;
     if (status === "ERROR" || status === "EXPIRED") {
       throw new ApiError(
-        `Media container ${status} — Instagram could not fetch/process the media. Common causes: staging URL expired (TTL), unsupported codec (Reels want MP4 H.264/AAC, 9:16), image aspect ratio outside 4:5–1.91:1.`,
+        `Media container ${status} — Instagram could not fetch/process the media. Common causes: staging URL expired (TTL), unsupported codec (video wants MP4 H.264/AAC), image aspect ratio outside 4:5–1.91:1.`,
         422,
       );
     }
     if (ctx.debug) console.error(`[debug] instagram container ${container}: ${status} (${i + 1}/${MAX_POLL_ATTEMPTS})`);
     await Bun.sleep(delay);
   }
-  if (status !== "FINISHED") {
-    throw new ApiError(`Media container still ${status} after ${MAX_POLL_ATTEMPTS} checks — try again; the container may finish and remain publishable for 24h.`, 408);
+  throw new ApiError(`Media container still ${status} after ${MAX_POLL_ATTEMPTS} checks — try again; the container may finish and remain publishable for 24h.`, 408);
+}
+
+function stagedUrl(m: { path?: string; url?: string }): string {
+  if (!m.url) throw new ValidationError("Media has no staged URL — staging must run before publish.");
+  return m.url;
+}
+
+async function post(ctx: AuthedCtx, p: Post): Promise<PostResult> {
+  validate(p);
+  const user = igUserId(ctx);
+  const media = p.media!;
+  let container: string;
+
+  if (media.length === 1) {
+    // Single: image, or video published as a Reel
+    const m = media[0]!;
+    const params = new URLSearchParams({ caption: p.text });
+    if (isVideo(m)) {
+      params.set("media_type", "REELS");
+      params.set("video_url", stagedUrl(m));
+    } else {
+      params.set("image_url", stagedUrl(m));
+    }
+    container = await createContainer(ctx, user, params);
+    await pollContainer(ctx, container);
+  } else {
+    // Carousel (2–10 items): child containers (is_carousel_item) → parent
+    // CAROUSEL container carrying the caption. Note: attaching Instagram
+    // music-library audio is NOT supported by the API (app-only feature);
+    // audio baked into a video file is carried through.
+    const children: string[] = [];
+    for (const m of media) {
+      const params = new URLSearchParams({ is_carousel_item: "true" });
+      if (isVideo(m)) {
+        params.set("media_type", "VIDEO");
+        params.set("video_url", stagedUrl(m));
+      } else {
+        params.set("image_url", stagedUrl(m));
+      }
+      children.push(await createContainer(ctx, user, params));
+    }
+    for (const child of children) await pollContainer(ctx, child);
+
+    container = await createContainer(ctx, user, new URLSearchParams({
+      media_type: "CAROUSEL",
+      children: children.join(","),
+      caption: p.text,
+    }));
+    await pollContainer(ctx, container);
   }
 
-  // 3. Publish
+  // Publish
   const pubRes = await ctx.fetch(`${IG_GRAPH}/${user}/media_publish`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -174,7 +214,7 @@ export const instagram: Provider = {
   },
   capabilities: {
     text: { maxChars: MAX_CAPTION_CHARS, required: false },
-    images: { max: 1, formats: IMAGE_EXTS, maxBytes: 8 * 1024 ** 2 },
+    images: { max: MAX_CAROUSEL_ITEMS, formats: IMAGE_EXTS, maxBytes: 8 * 1024 ** 2 },
     video: { formats: VIDEO_EXTS, maxBytes: 1024 ** 3 },
     link: "unsupported",
     mediaSource: "public-url",

@@ -31,10 +31,11 @@ const IMG = { path: "/x/a.jpg", url: "https://staged/a.jpg" };
 const VID = { path: "/x/v.mp4", url: "https://staged/v.mp4" };
 
 describe("instagram.validate", () => {
-  test("requires exactly one media", () => {
-    expect(() => instagram.validate({ text: "cap" })).toThrow(/exactly one/);
-    expect(() => instagram.validate({ text: "cap", media: [IMG, VID] })).toThrow(/exactly one/);
+  test("requires media; allows 1–10; rejects 11", () => {
+    expect(() => instagram.validate({ text: "cap" })).toThrow(/requires --media/);
     expect(() => instagram.validate({ text: "cap", media: [IMG] })).not.toThrow();
+    expect(() => instagram.validate({ text: "cap", media: [IMG, VID] })).not.toThrow();
+    expect(() => instagram.validate({ text: "cap", media: Array(11).fill(IMG) })).toThrow(/Carousel max 10/);
   });
 
   test("caption over 2200 chars rejected; link rejected", () => {
@@ -109,6 +110,39 @@ describe("instagram.post", () => {
     const r = await instagram.post(ctx(), { text: "c", media: [IMG] });
     expect(r.id).toBe("MEDIA4");
     expect(r.url).toBeUndefined();
+  });
+
+  test("carousel: child containers → parent CAROUSEL → publish", async () => {
+    const IMG2 = { path: "/x/b.png", url: "https://staged/b.png" };
+    fetchSpy = spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(jsonResponse({ id: "CH1" }))          // child 1
+      .mockResolvedValueOnce(jsonResponse({ id: "CH2" }))          // child 2 (video)
+      .mockResolvedValueOnce(jsonResponse({ status_code: "FINISHED" }))  // poll CH1
+      .mockResolvedValueOnce(jsonResponse({ status_code: "FINISHED" }))  // poll CH2
+      .mockResolvedValueOnce(jsonResponse({ id: "PARENT" }))       // parent
+      .mockResolvedValueOnce(jsonResponse({ status_code: "FINISHED" }))  // poll parent
+      .mockResolvedValueOnce(jsonResponse({ id: "MEDIA9" }))       // publish
+      .mockResolvedValueOnce(jsonResponse({ permalink: "https://www.instagram.com/p/car/" }));
+
+    const r = await instagram.post(ctx(), { text: "carousel cap", media: [IMG, VID] });
+    expect(r.id).toBe("MEDIA9");
+
+    const child1 = String(fetchSpy.mock.calls[0]![1]!.body);
+    expect(child1).toContain("is_carousel_item=true");
+    expect(child1).toContain(`image_url=${encodeURIComponent(IMG.url)}`);
+    expect(child1).not.toContain("caption");
+
+    const child2 = String(fetchSpy.mock.calls[1]![1]!.body);
+    expect(child2).toContain("media_type=VIDEO");   // carousel child, not REELS
+    expect(child2).toContain(`video_url=${encodeURIComponent(VID.url)}`);
+
+    const parent = String(fetchSpy.mock.calls[4]![1]!.body);
+    expect(parent).toContain("media_type=CAROUSEL");
+    expect(parent).toContain(`children=${encodeURIComponent("CH1,CH2")}`);
+    expect(parent).toContain("caption=carousel+cap");
+
+    const publish = String(fetchSpy.mock.calls[6]![1]!.body);
+    expect(publish).toContain("creation_id=PARENT");
   });
 
   test("missing ig_user_id → AuthRequiredError", async () => {
