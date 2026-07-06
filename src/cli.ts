@@ -4,9 +4,10 @@ import { AuthRequiredError, ValidationError, ApiError } from "./errors.ts";
 import { authLogin, authStatus, authLogout } from "./commands/auth.ts";
 import { postCmd, validateCmd } from "./commands/post.ts";
 import { accountsCmd } from "./commands/accounts.ts";
+import { stagingCmd } from "./commands/staging.ts";
 import { PROVIDERS } from "./provider.ts";
 
-const VERSION = "0.1.1";  // keep in sync with package.json (freshness test)
+const VERSION = "0.2.0";  // keep in sync with package.json (freshness test)
 
 const HELP = `postctl ${VERSION} — social posting for humans and AI agents
 
@@ -19,10 +20,14 @@ Verbs:
   accounts list            List configured accounts
   accounts use <name>      Set default account
   accounts remove <name>   Remove account + token
-  post "<text>"            Publish (--media, --description, --tags, --privacy, --dry-run)
+  post "<text>"            Publish (--media, --media-url, --description, --tags,
+                           --privacy, --link, --dry-run)
   validate "<text>"        Offline pre-flight, no quota spend (--media, …)
                            validate and post --dry-run accept --provider <id>
                            to run before any account is configured
+  staging set|status|test  R2/S3 media staging for Instagram/Facebook
+                           (set: --endpoint --bucket --region --access-key-id
+                           --secret-access-key)
   providers                List available providers
 
 Flags:
@@ -60,6 +65,8 @@ async function main(): Promise<void> {
     }
     case "accounts":
       return accountsCmd(args);
+    case "staging":
+      return stagingCmd(args);
     case "post":
       return postCmd(args);
     case "validate":

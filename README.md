@@ -3,8 +3,9 @@
 The missing CLI for social posting. One grammar for YouTube, Instagram,
 Facebook, X, and LinkedIn — built for humans, scripts, CI, and AI agents.
 
-**Status: v0.1.1 — YouTube provider shipped, e2e-verified with real credentials
-([report](docs/testing/e2e-youtube-20260707-report.md)). Instagram/Facebook next.**
+**Status: v0.2.0 — YouTube (e2e-verified,
+[report](docs/testing/e2e-youtube-20260707-report.md)), Instagram, and
+Facebook Pages shipped. X/LinkedIn next.**
 
 ```sh
 # Authenticate once (browser OAuth, tokens in your keychain)
@@ -47,7 +48,8 @@ and exits with a code you can branch on.
 | `auth status` | Per-account expiry dashboard (offline) |
 | `auth logout` | Delete stored token |
 | `accounts list\|use\|remove` | Manage named accounts |
-| `post "<text>"` | Publish (`--media`, `--description`, `--tags`, `--privacy`, `--dry-run`) |
+| `post "<text>"` | Publish (`--media`, `--media-url`, `--link`, `--description`, `--tags`, `--privacy`, `--dry-run`) |
+| `staging set\|status\|test` | R2/S3 media staging config for Instagram/Facebook |
 | `validate "<text>"` | Offline pre-flight, exit 1 + structured errors on fail (`--provider <id>` runs it before any account exists; also works on `post --dry-run`) |
 | `providers` | List available providers |
 
@@ -55,15 +57,19 @@ and exits with a code you can branch on.
 
 | Provider | Status | Behavior contract |
 |---|---|---|
-| YouTube | ✅ shipped, e2e-verified | [docs/platforms/youtube.md](docs/platforms/youtube.md) — read this first; quota + privacy rules |
-| Instagram | planned | needs media staging (S3/R2) |
-| Facebook Pages | planned | pages only (API policy) |
+| YouTube | ✅ shipped, e2e-verified | [docs/platforms/youtube.md](docs/platforms/youtube.md) — quota + privacy rules |
+| Instagram | ✅ shipped | [docs/platforms/instagram.md](docs/platforms/instagram.md) — Business/Creator account, media staging, 60-day sliding token |
+| Facebook Pages | ✅ shipped | [docs/platforms/facebook.md](docs/platforms/facebook.md) — Pages only (API policy) |
 | X | planned | pay-per-use API pricing |
 | LinkedIn | planned | 60-day re-auth wall (API policy) |
 
-Platform setup (developer app, one-time, ~30 min) is documented per provider
-in `docs/platforms/`. Research and architecture decisions in `docs/research/`
-and `docs/adr/`.
+Instagram and Facebook media publish from a public URL, so postctl stages
+local files through **your own R2/S3 bucket** (private; short-TTL presigned
+URLs; auto-cleanup): `postctl staging set …` then `postctl staging test`.
+
+Platform setup (developer app, one-time, ~20–30 min) is documented per
+provider in `docs/platforms/`. Research and architecture decisions in
+`docs/research/` and `docs/adr/`.
 
 ## Install (dev)
 

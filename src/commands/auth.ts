@@ -40,8 +40,8 @@ export async function authLogin(args: ParsedArgs): Promise<void> {
     );
   }
 
-  const verifier = generateCodeVerifier();
-  const challenge = await generateCodeChallenge(verifier);
+  const verifier = spec.pkce ? generateCodeVerifier() : undefined;
+  const challenge = verifier ? await generateCodeChallenge(verifier) : undefined;
   const state = generateState();
   const url = buildAuthUrl({
     authUrl: spec.authUrl,
@@ -77,19 +77,30 @@ export async function authLogin(args: ParsedArgs): Promise<void> {
     );
   }
 
+  // Provider-specific post-exchange step: Meta long-lived exchanges,
+  // Facebook page-token derivation (--page flag consumed here)
+  const finalized = provider.finalizeAuth
+    ? await provider.finalizeAuth(tokens, { clientId, clientSecret, flags: args.flags })
+    : {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expires_at: Date.now() + (tokens.expires_in ?? 3600) * 1000,
+      };
+
   saveToken(`${spec.providerId}/${account}`, {
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: Date.now() + tokens.expires_in * 1000,
+    access_token: finalized.access_token,
+    refresh_token: finalized.refresh_token,
+    expires_at: finalized.expires_at,
     client_secret: clientSecret,
     obtained_at: Date.now(),
   });
-  upsertProfile(account, { provider: providerId, client_id: clientId });
+  const profile = { provider: providerId, client_id: clientId, ...finalized.profileExtras };
+  upsertProfile(account, profile);
 
-  // Cache channel identity on the profile — makes 'accounts list' meaningful
-  const session = createAuthSession(spec, account, { provider: providerId, client_id: clientId });
-  const info = await provider.verify({ fetch: session.fetch, profileName: account, profile: session.profile, debug: false });
-  upsertProfile(account, { provider: providerId, client_id: clientId, channel_id: info.id, channel_title: info.displayName });
+  // Cache account identity on the profile — makes 'accounts list' meaningful
+  const session = createAuthSession(spec, account, profile);
+  const info = await provider.verify({ fetch: session.fetch, profileName: account, profile, debug: false });
+  upsertProfile(account, { ...profile, channel_id: info.id, channel_title: info.displayName });
 
   printDoc(
     { account, provider: providerId, channel: info.displayName ?? info.username, channel_id: info.id, status: "authenticated" },

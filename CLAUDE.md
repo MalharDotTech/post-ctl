@@ -15,13 +15,17 @@ bun run src/cli.ts    # run CLI locally
 ## Architecture (one paragraph)
 
 `cli.ts` routes verbs and owns the exit-code contract. Core modules
-(`config`, `token-store`, `oauth`, `http`, `output`, `args`, `errors`) are
-written once and provider-agnostic. Providers (`src/providers/*.ts`) are
-request-shaping only — endpoints, payload mapping, error interpretation.
-Providers never see raw tokens: `http.ts::createAuthSession` returns a
-closure-held authed fetch that injects headers, refreshes lazily, retries
-429/5xx bounded, and maps 401 → `AuthRequiredError`. No daemon, no queue,
-no database, zero runtime dependencies.
+(`config`, `token-store`, `oauth`, `http`, `stage`, `output`, `args`,
+`errors`) are written once and provider-agnostic. Providers
+(`src/providers/*.ts`) are request-shaping only — endpoints, payload mapping,
+error interpretation; optional `finalizeAuth` hook for post-OAuth steps (Meta
+long-lived exchange, FB page-token derivation). Providers never see raw
+tokens: `http.ts::createAuthSession` returns a closure-held authed fetch that
+injects headers, refreshes lazily (`standard` grant or Meta `exchange`),
+retries 429/5xx bounded, and maps 401 → `AuthRequiredError`. `stage.ts`
+(SigV4 presign, R2/S3) feeds `mediaSource: "public-url"` providers — verified
+against the AWS SigV4 test vector. No daemon, no queue, no database, zero
+runtime dependencies.
 
 ## Hard rules
 

@@ -9,11 +9,27 @@ export interface Profile {
   client_id?: string;        // OAuth client ID — saved by 'auth login'
   channel_id?: string;       // provider-side account identity, cached by verify
   channel_title?: string;
+  page_id?: string;          // facebook: selected Page
+  page_name?: string;
+  ig_user_id?: string;       // instagram: IG user id from token exchange
+}
+
+// Media staging for public-url providers (IG, FB media). secretAccessKey
+// lives in the token store (key "staging/default"), never here.
+export interface StagingConfig {
+  backend: "r2" | "s3" | "none";
+  endpoint: string;          // e.g. https://<acct>.r2.cloudflarestorage.com
+  bucket: string;
+  region: string;            // "auto" for R2
+  accessKeyId: string;
+  prefix?: string;           // default "postctl/"
+  presignTtlSeconds?: number; // default 3600
 }
 
 export interface Config {
   default: string;
   profiles: Record<string, Profile>;
+  staging?: StagingConfig;
 }
 
 // Read env var at call time (not module load time) so tests can inject via
