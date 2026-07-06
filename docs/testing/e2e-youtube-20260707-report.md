@@ -87,6 +87,33 @@ is the sensitive half). Documented as expected UX: operators must re-supply
   treats desktop-client IDs as non-confidential). Redacted from this report.
 - `auth status --output json` emitted no token values. **PASS.**
 
+## GCP config note — OAuth app verification (not required for this use case)
+
+During setup, the OAuth consent screen showed **"Your app requires
+verification"**. This is Google **OAuth app verification** — distinct from the
+YouTube compliance audit (finding 2). It triggers because `youtube.upload` and
+`youtube.readonly` are *sensitive* scopes.
+
+If verification is skipped:
+
+- App stays "unverified." Each operator sees a **"Google hasn't verified this
+  app"** interstitial on first login and must click *Advanced → go to
+  &lt;app&gt; (unsafe)* to proceed (one-time per operator). This is exactly the
+  screen clicked through during this test.
+- **100-user cap** on the app.
+- **Refresh tokens still persist** — the project is in **Production**, not
+  Testing. No 7-day token death. (The 7-day trap applies to Testing mode only,
+  which was correctly avoided.)
+
+**Verdict for the Isha use case: verification is not required.** 100 users far
+exceeds the operator headcount on a single owned channel, and the warning is a
+one-time click-through. Verification is only needed to remove the warning
+screen or to serve >100 external users.
+
+**Warning:** do NOT flip the consent screen back to **Testing** to silence the
+"unverified" banner — that reintroduces the 7-day refresh-token expiry. Leave
+it **Production + unverified**.
+
 ## Quota consumed
 
 - 2 real uploads × 1,600 units = **3,200 units** of 10,000/day.
