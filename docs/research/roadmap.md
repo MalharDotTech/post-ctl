@@ -72,6 +72,34 @@ Order chosen by dependency, not alphabet:
 
 ---
 
+## P6 — Post-publish mutation (edit already-shipped content) — requested, not yet scheduled
+
+Today every provider only *creates* (`post`). A distinct capability class:
+editing content that is already live. Driven by real demand (Isha content
+team: fix a YouTube title/description/thumbnail after upload without opening
+Studio).
+
+- **`update <id>` verb** — patch an existing post's metadata. YouTube first:
+  `videos.update` (part=snippet,status) for title, description, tags, category,
+  privacy. Provider gains an optional `update?(ctx, id, patch)` method; core
+  routes the verb, providers that don't support it return a clean "unsupported"
+  (exit 1). No new OAuth scope for YouTube — `youtube.upload` already covers
+  `videos.update`.
+- **`thumbnail <id> --image <file>` verb** — YouTube `thumbnails.set` (direct
+  multipart upload, not URL-pull, so no staging). **Caveat:** `thumbnails.set`
+  requires the channel to be **verified** (phone-confirmed); unverified
+  channels get a 403. Surface that as a named error, not a crash.
+- **Mapping to other platforms (when built):** IG/FB captions are largely
+  immutable via API (FB feed post message can be edited via `POST /{post-id}`;
+  IG captions cannot) — `update` stays provider-capability-gated, never
+  pretends universality.
+- **Design constraints:** same interface discipline as `post` (request-shaping
+  only in providers); `update --dry-run` prints the exact patch; `validate`
+  extends to check field limits offline; mutation is gated by `--enable-verbs`
+  / `--readonly` like `post`/`del` (P2.3).
+
+---
+
 ## Reference index (why these two tools)
 
 | Pattern to copy | frappe-ctl | gog (gogcli.sh) |
