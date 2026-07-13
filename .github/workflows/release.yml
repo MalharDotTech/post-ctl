@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with: { bun-version: latest }
+      - run: bun install --frozen-lockfile   # devDeps (@types/bun, typescript) for tsc
       - run: bun test
       - run: bunx tsc --noEmit
       # Tag must match the single version source (package.json / cli.ts VERSION).
