@@ -8,9 +8,10 @@ export const REDIRECT_URI = `http://localhost:${REDIRECT_PORT}`;
 export interface TokenResponse {
   access_token: string;
   refresh_token?: string;
-  expires_in: number;   // seconds
-  token_type: string;
+  expires_in?: number;   // seconds; absent on IG short-lived tokens
+  token_type?: string;
   scope?: string;
+  [extra: string]: unknown;   // IG returns user_id + permissions
 }
 
 // ── PKCE crypto ────────────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ export function buildAuthUrl(opts: {
   authUrl: string;
   clientId: string;
   scopes: string[];
-  codeChallenge: string;
+  codeChallenge?: string;   // absent for non-PKCE providers (Instagram)
   state: string;
   extraParams?: Record<string, string>;
 }): string {
@@ -57,9 +58,10 @@ export function buildAuthUrl(opts: {
     client_id: opts.clientId,
     redirect_uri: REDIRECT_URI,
     scope: opts.scopes.join(" "),
-    code_challenge: opts.codeChallenge,
-    code_challenge_method: "S256",
     state: opts.state,
+    ...(opts.codeChallenge
+      ? { code_challenge: opts.codeChallenge, code_challenge_method: "S256" }
+      : {}),
     ...opts.extraParams,
   });
   return `${opts.authUrl}?${params}`;
@@ -182,15 +184,15 @@ export async function exchangeCode(opts: {
   clientId: string;
   clientSecret?: string;
   code: string;
-  codeVerifier: string;
+  codeVerifier?: string;    // absent for non-PKCE providers
 }): Promise<TokenResponse> {
   const body = new URLSearchParams({
     grant_type: "authorization_code",
     code: opts.code,
     client_id: opts.clientId,
     redirect_uri: REDIRECT_URI,
-    code_verifier: opts.codeVerifier,
   });
+  if (opts.codeVerifier) body.set("code_verifier", opts.codeVerifier);
   if (opts.clientSecret) body.set("client_secret", opts.clientSecret);
 
   const res = await fetch(opts.tokenUrl, {

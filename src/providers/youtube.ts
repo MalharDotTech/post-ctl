@@ -52,6 +52,8 @@ function validate(post: Post): void {
 
   if (!post.media || post.media.length !== 1) {
     errors.push("Exactly one --media video file required.");
+  } else if (!post.media[0]!.path) {
+    errors.push("YouTube uploads files directly — use --media <file>, not --media-url.");
   } else {
     const path = post.media[0]!.path;
     if (!existsSync(path)) {
@@ -101,10 +103,10 @@ async function verify(ctx: AuthedCtx): Promise<AccountInfo> {
 
 async function post(ctx: AuthedCtx, p: Post): Promise<PostResult> {
   validate(p);
-  const media = p.media![0]!;
-  const file = Bun.file(media.path);
+  const path = p.media![0]!.path!;   // validate guarantees a local path
+  const file = Bun.file(path);
   const size = file.size;
-  const mime = MIME_BY_EXT[extname(media.path).toLowerCase()] ?? "video/*";
+  const mime = MIME_BY_EXT[extname(path).toLowerCase()] ?? "video/*";
 
   const metadata = {
     snippet: {
@@ -119,7 +121,7 @@ async function post(ctx: AuthedCtx, p: Post): Promise<PostResult> {
   };
 
   if (ctx.debug) {
-    console.error(`[debug] youtube upload: ${basename(media.path)} (${size} bytes, ${mime})`);
+    console.error(`[debug] youtube upload: ${basename(path)} (${size} bytes, ${mime})`);
     console.error(`[debug] quota: this upload costs 1,600 of 10,000 daily units (~6 uploads/day)`);
   }
 
@@ -220,6 +222,7 @@ export const youtube: Provider = {
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/youtube.readonly",
     ],
+    pkce: true,
     clientSecretRequired: true,
     refresh: "standard",
     // access_type=offline is what makes Google issue a refresh_token;

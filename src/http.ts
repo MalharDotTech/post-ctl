@@ -34,16 +34,57 @@ export function createAuthSession(
   const reauthMsg = () =>
     `Authentication required for '${profileName}'. Run: postctl auth login ${spec.providerId} --account ${profileName}`;
 
+  const EXCHANGE_REFRESH_AGE_MS = 30 * 24 * 3600_000;  // opportunistic window
+
   async function ensureFresh(): Promise<StoredToken> {
     if (!token) throw new AuthRequiredError(reauthMsg());
+    if (spec.refresh === "exchange") {
+      // Meta sliding tokens: refreshable only while still valid. Refresh
+      // opportunistically past 30d age so any use inside 60 days keeps the
+      // token alive forever; once expired only re-login helps.
+      if (Date.now() >= token.expires_at) {
+        throw new AuthRequiredError(`Token expired (Meta tokens cannot be refreshed once expired). ${reauthMsg()}`);
+      }
+      if (Date.now() - token.obtained_at > EXCHANGE_REFRESH_AGE_MS) {
+        try {
+          return await exchangeRefresh();
+        } catch {
+          // Opportunistic — current token is still valid, keep going; the
+          // hard failure surfaces at actual expiry as exit 4
+          return token;
+        }
+      }
+      return token;
+    }
     if (!isTokenExpired(token)) return token;
     return refresh();
   }
 
+  // Meta exchange: GET url?grant_type=…&access_token=… → new sliding token.
+  // The token rides in the query string — never surface the URL in errors.
+  async function exchangeRefresh(): Promise<StoredToken> {
+    if (!token || !spec.exchange) throw new AuthRequiredError(reauthMsg());
+    const url = `${spec.exchange.url}?${new URLSearchParams({
+      grant_type: spec.exchange.grantType,
+      access_token: token.access_token,
+    })}`;
+    const res = await fetch(url);
+    if (!res.ok) {
+      throw new AuthRequiredError(`Token exchange refresh failed (${res.status}). ${reauthMsg()}`);
+    }
+    const resp = await res.json() as { access_token: string; expires_in?: number };
+    token = {
+      access_token: resp.access_token,
+      expires_at: Date.now() + (resp.expires_in ?? 5_184_000) * 1000,  // 60d default
+      client_secret: token.client_secret,
+      obtained_at: Date.now(),
+    };
+    saveToken(key, token);
+    return token;
+  }
+
   async function refresh(): Promise<StoredToken> {
-    // Only 'standard' (grant_type=refresh_token) is implemented; 'exchange'
-    // (Meta long-lived token exchange) lands with the Instagram/Facebook
-    // providers — do NOT fall through to the wrong grant type silently.
+    if (spec.refresh === "exchange") return exchangeRefresh();
     if (!token?.refresh_token || spec.refresh !== "standard") {
       throw new AuthRequiredError(`Token expired and not refreshable. ${reauthMsg()}`);
     }
@@ -67,7 +108,7 @@ export function createAuthSession(
       access_token: resp.access_token,
       // Google may omit refresh_token on refresh responses — keep the old one
       refresh_token: resp.refresh_token ?? token.refresh_token,
-      expires_at: Date.now() + resp.expires_in * 1000,
+      expires_at: Date.now() + (resp.expires_in ?? 3600) * 1000,
       client_secret: token.client_secret,
       obtained_at: Date.now(),
     };

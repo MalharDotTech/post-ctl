@@ -5,6 +5,7 @@ export interface ParsedArgs {
   positional: string[];
   flags: Record<string, string | boolean>;
   media: string[];
+  mediaUrls: string[];
 }
 
 const BOOLEAN_FLAGS = new Set(["debug", "dry-run", "help", "version", "readonly"]);
@@ -13,6 +14,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   const positional: string[] = [];
   const flags: Record<string, string | boolean> = {};
   const media: string[] = [];
+  const mediaUrls: string[] = [];
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]!;
@@ -38,11 +40,13 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
     if (name === "media" && typeof value === "string") {
       media.push(value);
+    } else if (name === "media-url" && typeof value === "string") {
+      mediaUrls.push(value);
     } else {
       flags[name] = value;
     }
   }
-  return { positional, flags, media };
+  return { positional, flags, media, mediaUrls };
 }
 
 export function stringFlag(flags: Record<string, string | boolean>, name: string): string | undefined {

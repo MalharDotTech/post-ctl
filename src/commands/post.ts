@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "fs";
 import { loadConfig, getActiveProfile } from "../config.ts";
 import { getProvider, type Post } from "../provider.ts";
 import { createAuthSession } from "../http.ts";
+import { stageFile, type StagedMedia } from "../stage.ts";
 import { ValidationError } from "../errors.ts";
 import { detectFormat, printDoc } from "../output.ts";
 import type { ParsedArgs } from "../args.ts";
@@ -22,10 +23,19 @@ export function buildPost(args: ParsedArgs): Post {
     throw new ValidationError(`--privacy must be public|unlisted|private, got '${privacy}'.`);
   }
 
+  // Local files (--media) get staged for public-url providers; --media-url
+  // entries are already hosted and skip staging entirely
+  for (const path of args.media) {
+    if (!existsSync(path)) throw new ValidationError(`Media file not found: ${path}`);
+  }
+
   const tags = stringFlag(args.flags, "tags");
   return {
     text,
-    media: args.media.map((path) => ({ path })),
+    media: [
+      ...args.media.map((path) => ({ path })),
+      ...args.mediaUrls.map((url) => ({ url })),
+    ],
     link: stringFlag(args.flags, "link"),
     description,
     tags: tags ? tags.split(",").map((t) => t.trim()).filter(Boolean) : undefined,
@@ -62,12 +72,30 @@ export async function postCmd(args: ParsedArgs): Promise<void> {
     return;
   }
 
+  // Stage local files for providers that publish from a public URL (Meta).
+  // Staged objects are cleaned up after publish; presign TTL is the backstop.
+  const staged: StagedMedia[] = [];
+  if (provider.capabilities.mediaSource === "public-url") {
+    for (const m of post.media ?? []) {
+      if (m.path && !m.url) {
+        const s = await stageFile(m.path);
+        m.url = s.url;
+        staged.push(s);
+        if (debug) console.error(`[debug] staged ${m.path} → key ${s.key}`);
+      }
+    }
+  }
+
   const session = createAuthSession(provider.auth, name, profile);
-  const result = await provider.post(
-    { fetch: session.fetch, profileName: name, profile, debug },
-    post,
-  );
-  printDoc({ account: name, provider: provider.id, ...result }, format);
+  try {
+    const result = await provider.post(
+      { fetch: session.fetch, profileName: name, profile, debug },
+      post,
+    );
+    printDoc({ account: name, provider: provider.id, ...result }, format);
+  } finally {
+    for (const s of staged) await s.cleanup();
+  }
 }
 
 export function validateCmd(args: ParsedArgs): void {
