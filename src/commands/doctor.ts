@@ -8,7 +8,7 @@ import { detectFormat, printDocs } from "../output.ts";
 import { stringFlag, type ParsedArgs } from "../args.ts";
 import { VERSION } from "../version.ts";
 
-const REPO = "MalharDotTech/postctl";
+const REPO = "MalharDotTech/post-ctl";
 
 // One diagnostic row. status drives the exit code; fix is the exact command
 // to run when a check fails (empty on ok/warn-with-no-action).
@@ -140,7 +140,7 @@ export async function diagnose(opts: { online?: boolean } = {}): Promise<DoctorR
       if (res.ok) {
         const latest = ((await res.json()) as { tag_name?: string }).tag_name?.replace(/^v/, "") ?? "";
         if (latest && latest !== VERSION) {
-          push({ check: "version", status: "warn", detail: `installed ${VERSION}, latest ${latest}`, fix: "curl -fsSL https://postctl.dev/install.sh | sh" });
+          push({ check: "version", status: "warn", detail: `installed ${VERSION}, latest ${latest}`, fix: `curl -fsSL https://raw.githubusercontent.com/${REPO}/main/scripts/install.sh | sh` });
         } else {
           push({ check: "version", status: "ok", detail: `${VERSION} (latest)`, fix: "" });
         }

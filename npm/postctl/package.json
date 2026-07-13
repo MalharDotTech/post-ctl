@@ -22,9 +22,9 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MalharDotTech/postctl"
+    "url": "https://github.com/MalharDotTech/post-ctl"
   },
-  "homepage": "https://github.com/MalharDotTech/postctl",
+  "homepage": "https://github.com/MalharDotTech/post-ctl",
   "engines": {
     "node": ">=18"
   },

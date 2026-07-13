@@ -66,7 +66,7 @@
 
 <h2>Install</h2>
 <h3>curl (standalone binary)</h3>
-<pre>curl -fsSL https://raw.githubusercontent.com/MalharDotTech/postctl/main/scripts/install.sh | sh</pre>
+<pre>curl -fsSL https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh | sh</pre>
 <h3>npm / npx</h3>
 <pre>npm i -g postctl        <span class="c"># or: npx postctl …</span></pre>
 <h3>bun</h3>
@@ -113,9 +113,9 @@ postctl doctor --output json | jq -e '.[] | select(.status=="fail")' &amp;&amp; 
              &gt;&gt; /var/log/postctl.log 2&gt;&amp;1</pre>
 
 <footer>
-  <a href="https://github.com/MalharDotTech/postctl">GitHub</a> ·
-  <a href="https://github.com/MalharDotTech/postctl/tree/main/docs/platforms">Platform docs</a> ·
-  <a href="https://github.com/MalharDotTech/postctl/tree/main/docs/adr">ADRs</a>
+  <a href="https://github.com/MalharDotTech/post-ctl">GitHub</a> ·
+  <a href="https://github.com/MalharDotTech/post-ctl/tree/main/docs/platforms">Platform docs</a> ·
+  <a href="https://github.com/MalharDotTech/post-ctl/tree/main/docs/adr">ADRs</a>
   <br><br>
   postctl — agent-first, human-auditable. Lineage: frappe-ctl.
 </footer>

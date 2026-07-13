@@ -17,7 +17,7 @@ const PKG_BY_KEY = {
 
 const key = `${process.platform}-${process.arch}`;
 const pkg = PKG_BY_KEY[key];
-const INSTALLER = "https://raw.githubusercontent.com/MalharDotTech/postctl/main/scripts/install.sh";
+const INSTALLER = "https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh";
 
 if (!pkg) {
   process.stderr.write(

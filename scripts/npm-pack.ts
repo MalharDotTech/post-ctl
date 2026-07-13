@@ -54,7 +54,7 @@ function platformPackage(p: Plat): void {
         cpu: [p.cpu],
         files: ["bin/"],
         license: "MIT",
-        repository: { type: "git", url: "https://github.com/MalharDotTech/postctl" },
+        repository: { type: "git", url: "https://github.com/MalharDotTech/post-ctl" },
       },
       null,
       2,
