@@ -1,5 +1,7 @@
 node_modules/
 dist/
-postctl
+/postctl
 *.log
+*.bun-build
+.*.bun-build
 .DS_Store

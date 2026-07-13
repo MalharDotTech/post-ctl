@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+# postctl entry point — requires Bun (https://bun.sh)
+set -e
+
+if ! command -v bun >/dev/null 2>&1; then
+  echo "postctl requires Bun (https://bun.sh)" >&2
+  echo "Install: curl -fsSL https://bun.sh/install | bash" >&2
+  exit 1
+fi
+
+# Resolve through symlinks — npm's global install always symlinks the bin
+# into a separate bin dir. `dirname "$0"` alone resolves relative to the
+# symlink's own location, not the real script's. Avoid GNU-only
+# `readlink -f` (macOS ships BSD readlink without it) — loop manually.
+SOURCE="$0"
+while [ -h "$SOURCE" ]; do
+  DIR=$(cd -P "$(dirname "$SOURCE")" && pwd)
+  SOURCE=$(readlink "$SOURCE")
+  case "$SOURCE" in
+    /*) ;;
+    *) SOURCE="$DIR/$SOURCE" ;;
+  esac
+done
+DIR=$(cd -P "$(dirname "$SOURCE")" && pwd)
+exec bun run "$DIR/../src/cli.ts" "$@"

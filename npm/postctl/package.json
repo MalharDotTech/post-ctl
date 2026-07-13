@@ -1,0 +1,38 @@
+{
+  "name": "postctl",
+  "version": "0.0.0",
+  "description": "The missing CLI for social posting. YouTube, Instagram, Facebook, X, LinkedIn. Built for humans and AI agents.",
+  "bin": {
+    "postctl": "bin/postctl.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "keywords": [
+    "social-media",
+    "youtube",
+    "instagram",
+    "cli",
+    "ai-agents",
+    "kubectl",
+    "posting",
+    "automation"
+  ],
+  "author": "Malhar Ujawane",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MalharDotTech/post-ctl"
+  },
+  "homepage": "https://github.com/MalharDotTech/post-ctl",
+  "engines": {
+    "node": ">=18"
+  },
+  "optionalDependencies": {
+    "@post-ctl/darwin-arm64": "0.0.0",
+    "@post-ctl/darwin-x64": "0.0.0",
+    "@post-ctl/linux-x64": "0.0.0",
+    "@post-ctl/linux-arm64": "0.0.0",
+    "@post-ctl/win32-x64": "0.0.0"
+  }
+}

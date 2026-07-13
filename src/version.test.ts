@@ -5,11 +5,10 @@ import { join } from "path";
 // Freshness check (frappe-ctl ADR-025 pattern): package.json is the single
 // version source; cli.ts must not drift.
 describe("version sync", () => {
-  test("cli.ts VERSION matches package.json", () => {
+  test("version.ts VERSION matches package.json", async () => {
     const pkg = JSON.parse(readFileSync(join(import.meta.dir, "..", "package.json"), "utf8"));
-    const cli = readFileSync(join(import.meta.dir, "cli.ts"), "utf8");
-    const match = /const VERSION = "([^"]+)"/.exec(cli);
-    expect(match?.[1]).toBe(pkg.version);
+    const { VERSION } = await import("./version.ts");
+    expect(VERSION).toBe(pkg.version);
   });
 
   test("every provider in registry has a platform behavior doc", async () => {

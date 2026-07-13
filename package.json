@@ -1,17 +1,13 @@
 {
   "name": "postctl",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "The missing CLI for social posting. YouTube, Instagram, Facebook, X, LinkedIn. Built for humans and AI agents.",
   "type": "module",
+  "private": true,
+  "//": "Source/dev manifest. The published npm package is assembled in dist/npm (scripts/npm-pack.ts) — this repo is not published directly.",
   "bin": {
     "postctl": "./bin/postctl"
   },
-  "files": [
-    "bin/",
-    "src/",
-    "!src/**/*.test.ts",
-    "!src/__fixtures__/"
-  ],
   "keywords": [
     "social-media",
     "youtube",
@@ -26,14 +22,15 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/MalharDotTech/postctl"
+    "url": "https://github.com/MalharDotTech/post-ctl"
   },
   "engines": {
     "bun": ">=1.3.0"
   },
   "scripts": {
     "dev": "bun run src/cli.ts",
-    "build": "bun build --compile --minify src/cli.ts --outfile postctl",
+    "build": "bun run scripts/build.ts",
+    "build:npm": "bun run scripts/npm-pack.ts",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:watch": "bun test --watch",

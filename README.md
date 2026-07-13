@@ -3,13 +3,13 @@
 The missing CLI for social posting. One grammar for YouTube, Instagram,
 Facebook, X, and LinkedIn — built for humans, scripts, CI, and AI agents.
 
-**Status: v0.2.0 — YouTube (e2e-verified,
+**Status: v0.3.0 — YouTube (e2e-verified,
 [report](docs/testing/e2e-youtube-20260707-report.md)), Instagram, and
 Facebook Pages shipped. X/LinkedIn next.**
 
 ```sh
-# Authenticate once (browser OAuth, tokens in your keychain)
-postctl auth login youtube --account isha --client-id <ID> --client-secret <SECRET>
+# Guided one-time onboarding (interactive)
+postctl setup youtube
 
 # Pre-flight offline — no quota spent
 postctl validate "Video title" --media ./talk.mp4
@@ -44,6 +44,8 @@ and exits with a code you can branch on.
 
 | Verb | Purpose |
 |---|---|
+| `setup <provider>` | Guided, resumable onboarding wizard (TTY only; agents get the non-interactive path) |
+| `doctor` | Offline diagnosis of config/tokens/staging; `--online` checks for updates |
 | `auth login <provider>` | Browser OAuth flow, stores tokens |
 | `auth status` | Per-account expiry dashboard (offline) |
 | `auth logout` | Delete stored token |
@@ -71,12 +73,25 @@ Platform setup (developer app, one-time, ~20–30 min) is documented per
 provider in `docs/platforms/`. Research and architecture decisions in
 `docs/research/` and `docs/adr/`.
 
-## Install (dev)
+## Install
 
 ```sh
-git clone https://github.com/MalharDotTech/postctl && cd postctl
+# Standalone binary (macOS/Linux, arm64/x64) — no runtime needed
+curl -fsSL https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh | sh
+
+# npm (all platforms incl. Windows)
+npm i -g postctl        # or: npx postctl … / bunx postctl …
+```
+
+Then run `postctl setup youtube` for guided onboarding, or `postctl doctor`
+to check an existing setup.
+
+### From source (dev)
+
+```sh
+git clone https://github.com/MalharDotTech/post-ctl && cd post-ctl
 bun install && bun test
-./bin/postctl --help
+bun run src/cli.ts --help
 ```
 
 ## License
