@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>postctl — social posting for humans and AI agents</title>
+<meta name="description" content="kubectl-style CLI for posting to YouTube, Instagram, Facebook via official OAuth APIs. Zero dependencies, agent-first, human-auditable.">
+<style>
+  :root {
+    --bg: #0d1117; --fg: #e6edf3; --muted: #8b949e; --line: #21262d;
+    --accent: #58a6ff; --card: #161b22; --ok: #3fb950; --code: #c9d1d9;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --line: #d1d9e0;
+      --accent: #0969da; --card: #f6f8fa; --ok: #1a7f37; --code: #1f2328;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 0 20px; }
+  code, pre, .mono {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  header { padding: 72px 0 40px; border-bottom: 1px solid var(--line); }
+  h1 { font-size: 40px; margin: 0 0 8px; letter-spacing: -0.02em; }
+  h1 .prompt { color: var(--accent); }
+  .tag { color: var(--muted); font-size: 19px; margin: 0 0 28px; }
+  h2 { font-size: 22px; margin: 48px 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 28px 0 10px; }
+  p { color: var(--fg); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  pre {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px 18px; overflow-x: auto; font-size: 14px; color: var(--code);
+    margin: 0 0 14px;
+  }
+  pre .c { color: var(--muted); }
+  pre .k { color: var(--accent); }
+  .pill { display: inline-block; font-size: 12px; color: var(--muted); border: 1px solid var(--line);
+    border-radius: 999px; padding: 2px 10px; margin: 0 6px 8px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 8px 0 14px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.mono { color: var(--code); }
+  footer { margin: 64px 0 48px; padding-top: 24px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr; gap: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1><span class="prompt">$</span> postctl</h1>
+  <p class="tag">The missing CLI for social posting — YouTube, Instagram, Facebook, X, LinkedIn.<br>Built for humans and AI agents. Zero dependencies. Auditable by design.</p>
+  <span class="pill">official OAuth APIs</span>
+  <span class="pill">no daemon · no database</span>
+  <span class="pill">JSON out for pipes</span>
+  <span class="pill">MIT</span>
+</header>
+
+<h2>Install</h2>
+<h3>curl (standalone binary)</h3>
+<pre>curl -fsSL https://raw.githubusercontent.com/MalharDotTech/postctl/main/scripts/install.sh | sh</pre>
+<h3>npm / npx</h3>
+<pre>npm i -g postctl        <span class="c"># or: npx postctl …</span></pre>
+<h3>bun</h3>
+<pre>bunx postctl --version</pre>
+<p class="mono" style="color:var(--muted);font-size:13px">macOS &amp; Linux (arm64/x64) prebuilt. Windows via npm.</p>
+
+<h2>Quickstart</h2>
+<h3>1 — guided setup (one sitting)</h3>
+<pre>postctl setup youtube</pre>
+<p style="color:var(--muted);font-size:14px;margin-top:-6px">Walks you through the Google Cloud project, consent screen, and OAuth client, then logs you in and verifies your channel. Re-runnable and resumable.</p>
+<h3>2 — pre-flight (offline, free)</h3>
+<pre>postctl validate "My talk" --media ./talk.mp4 --account isha</pre>
+<h3>3 — post</h3>
+<pre>postctl post "My talk" --media ./talk.mp4 \
+  --description ./notes.txt --tags "wisdom,talk" --account isha</pre>
+
+<h2>Agent &amp; script integration</h2>
+<p>Everything speaks JSON when stdout isn't a TTY (or with <code>--output json</code>), and the exit code is the contract — no output parsing needed to branch.</p>
+
+<h3>Exit codes</h3>
+<table>
+  <tr><th>Code</th><th>Meaning</th></tr>
+  <tr><td class="mono">0</td><td>success</td></tr>
+  <tr><td class="mono">1</td><td>validation / API failure</td></tr>
+  <tr><td class="mono">4</td><td>auth required — run <span class="mono">auth login</span></td></tr>
+</table>
+
+<h3>bash</h3>
+<pre><span class="c"># dry-run first; only post if the payload validates</span>
+<span class="k">if</span> postctl validate "$TITLE" --media "$FILE" --account isha; <span class="k">then</span>
+  postctl post "$TITLE" --media "$FILE" --account isha --output json &gt; result.json
+<span class="k">else</span>
+  echo "invalid, skipping" &gt;&amp;2
+<span class="k">fi</span></pre>
+
+<h3>health check in a pipeline</h3>
+<pre><span class="c"># exit 1 if any account/token/staging check fails</span>
+postctl doctor --output json | jq -e '.[] | select(.status=="fail")' &amp;&amp; exit 1 || true</pre>
+
+<h3>cron (daily scheduled post)</h3>
+<pre><span class="c"># 09:00 daily — tokens refresh silently; no interaction in the write path</span>
+0 9 * * *  /usr/bin/env postctl post "$(cat /srv/today.txt)" \
+             --media /srv/clip.mp4 --account isha --output json \
+             &gt;&gt; /var/log/postctl.log 2&gt;&amp;1</pre>
+
+<footer>
+  <a href="https://github.com/MalharDotTech/postctl">GitHub</a> ·
+  <a href="https://github.com/MalharDotTech/postctl/tree/main/docs/platforms">Platform docs</a> ·
+  <a href="https://github.com/MalharDotTech/postctl/tree/main/docs/adr">ADRs</a>
+  <br><br>
+  postctl — agent-first, human-auditable. Lineage: frappe-ctl.
+</footer>
+
+</div>
+</body>
+</html>

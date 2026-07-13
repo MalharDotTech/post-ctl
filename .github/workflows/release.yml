@@ -1,0 +1,129 @@
+name: release
+
+# Tag push v* → test, build 5 standalone binaries, checksum them, cut a GitHub
+# Release, then publish the npm platform packages + main launcher (provenance).
+# Requires (repo settings): public repo; secret NPM_TOKEN; the @postctl org on
+# npm with the token authorized to publish it.
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # create the GitHub Release
+  id-token: write   # npm provenance (OIDC)
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
+      - run: bun test
+      - run: bunx tsc --noEmit
+      # Tag must match the single version source (package.json / cli.ts VERSION).
+      - name: Verify tag matches package version
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          pkg="$(bun -e 'console.log(require("./package.json").version)')"
+          if [ "$tag" != "$pkg" ]; then
+            echo "tag v$tag != package.json $pkg" >&2; exit 1
+          fi
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
+      - name: Build all targets
+        run: bun run scripts/build.ts
+      - name: Generate SHA256SUMS
+        working-directory: dist
+        run: sha256sum postctl-* > SHA256SUMS
+      - name: Smoke-test linux-x64 binary
+        run: |
+          chmod +x dist/postctl-linux-x64
+          ./dist/postctl-linux-x64 --version
+          ./dist/postctl-linux-x64 providers
+          tmp="$(mktemp --suffix=.mp4)"; head -c 1024 /dev/zero > "$tmp"
+          ./dist/postctl-linux-x64 validate "hello" --provider youtube --media "$tmp"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: dist/
+          retention-days: 1
+
+  smoke-macos:
+    needs: build
+    runs-on: macos-latest    # Apple silicon (arm64)
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: binaries, path: dist }
+      - name: Smoke-test darwin-arm64 + keychain fallback
+        run: |
+          chmod +x dist/postctl-darwin-arm64
+          ./dist/postctl-darwin-arm64 --version
+          ./dist/postctl-darwin-arm64 providers
+          tmp="$(mktemp).mp4"; head -c 1024 /dev/zero > "$tmp"
+          ./dist/postctl-darwin-arm64 validate "hello" --provider youtube --media "$tmp"
+          # File-backed token store fallback must work off-keychain.
+          export POSTCTL_NO_KEYCHAIN=1 POSTCTL_CONFIG_DIR="$(mktemp -d)"
+          ./dist/postctl-darwin-arm64 doctor || true   # exit 1 expected (no config); must not crash
+
+  release:
+    needs: [build, smoke-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: binaries, path: dist }
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            dist/postctl-* dist/SHA256SUMS
+
+  publish-npm:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+      - uses: actions/download-artifact@v4
+        with: { name: binaries, path: dist }
+      - name: Assemble npm tree
+        run: bun run scripts/npm-pack.ts
+      - name: Publish platform packages, then main (provenance)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          for p in dist/npm/@postctl/*; do
+            npm publish "$p" --access public --provenance
+          done
+          npm publish dist/npm/postctl --access public --provenance
+
+  install-test:
+    needs: release
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install from the just-published release via install.sh
+        env:
+          POSTCTL_VERSION: ${{ github.ref_name }}
+        run: |
+          sh scripts/install.sh
+          "$HOME/.local/bin/postctl" --version
