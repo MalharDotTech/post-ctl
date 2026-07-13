@@ -8,8 +8,7 @@ import { stagingCmd } from "./commands/staging.ts";
 import { doctorCmd } from "./commands/doctor.ts";
 import { setupCmd } from "./commands/setup.ts";
 import { PROVIDERS } from "./provider.ts";
-
-const VERSION = "0.2.0";  // keep in sync with package.json (freshness test)
+import { VERSION } from "./version.ts";
 
 const HELP = `postctl ${VERSION} — social posting for humans and AI agents
 

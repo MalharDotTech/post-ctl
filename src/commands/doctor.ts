@@ -6,8 +6,8 @@ import { loadToken, isTokenExpired } from "../token-store.ts";
 import { STAGING_SECRET_KEY } from "../stage.ts";
 import { detectFormat, printDocs } from "../output.ts";
 import { stringFlag, type ParsedArgs } from "../args.ts";
+import { VERSION } from "../version.ts";
 
-const VERSION = "0.2.0";  // freshness-guarded against package.json (version.test.ts)
 const REPO = "MalharDotTech/postctl";
 
 // One diagnostic row. status drives the exit code; fix is the exact command
