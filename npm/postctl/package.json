@@ -29,10 +29,10 @@
     "node": ">=18"
   },
   "optionalDependencies": {
-    "@postctl/darwin-arm64": "0.0.0",
-    "@postctl/darwin-x64": "0.0.0",
-    "@postctl/linux-x64": "0.0.0",
-    "@postctl/linux-arm64": "0.0.0",
-    "@postctl/win32-x64": "0.0.0"
+    "@post-ctl/darwin-arm64": "0.0.0",
+    "@post-ctl/darwin-x64": "0.0.0",
+    "@post-ctl/linux-x64": "0.0.0",
+    "@post-ctl/linux-arm64": "0.0.0",
+    "@post-ctl/win32-x64": "0.0.0"
   }
 }

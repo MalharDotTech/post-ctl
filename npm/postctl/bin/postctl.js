@@ -8,11 +8,11 @@ const { spawnSync } = require("child_process");
 
 // npm platform packages are keyed on process.platform/process.arch.
 const PKG_BY_KEY = {
-  "darwin-arm64": "@postctl/darwin-arm64",
-  "darwin-x64": "@postctl/darwin-x64",
-  "linux-x64": "@postctl/linux-x64",
-  "linux-arm64": "@postctl/linux-arm64",
-  "win32-x64": "@postctl/win32-x64",
+  "darwin-arm64": "@post-ctl/darwin-arm64",
+  "darwin-x64": "@post-ctl/darwin-x64",
+  "linux-x64": "@post-ctl/linux-x64",
+  "linux-arm64": "@post-ctl/linux-arm64",
+  "win32-x64": "@post-ctl/win32-x64",
 };
 
 const key = `${process.platform}-${process.arch}`;

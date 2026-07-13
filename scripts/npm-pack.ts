@@ -15,6 +15,11 @@ const ROOT = join(import.meta.dir, "..");
 const DIST = join(ROOT, "dist");
 const OUT = join(DIST, "npm");
 
+// npm org scope for platform packages (product-scope org, esbuild pattern).
+// Platform pkg names are ${SCOPE}/<platform>. Change here +
+// npm/postctl/{package.json,bin/postctl.js} if the org differs.
+const SCOPE = "@post-ctl";
+
 const VERSION = (JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")) as { version: string }).version;
 
 // dist binary id → npm platform key + os/cpu constraints.
@@ -32,7 +37,7 @@ function platformPackage(p: Plat): void {
   const src = join(DIST, binName);
   if (!existsSync(src)) throw new Error(`missing binary ${src} — run scripts/build.ts first`);
 
-  const pkgDir = join(OUT, "@postctl", p.npmKey);
+  const pkgDir = join(OUT, SCOPE, p.npmKey);
   mkdirSync(join(pkgDir, "bin"), { recursive: true });
   cpSync(src, join(pkgDir, "bin", `postctl${p.exe ? ".exe" : ""}`));
 
@@ -42,7 +47,7 @@ function platformPackage(p: Plat): void {
     join(pkgDir, "package.json"),
     JSON.stringify(
       {
-        name: `@postctl/${p.npmKey}`,
+        name: `${SCOPE}/${p.npmKey}`,
         version: VERSION,
         description: `postctl prebuilt binary for ${p.os}-${p.cpu}`,
         os: [p.os],
@@ -55,7 +60,7 @@ function platformPackage(p: Plat): void {
       2,
     ) + "\n",
   );
-  console.log(`  ✓ @postctl/${p.npmKey}`);
+  console.log(`  ✓ ${SCOPE}/${p.npmKey}`);
 }
 
 function mainPackage(): void {

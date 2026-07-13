@@ -2,7 +2,7 @@ name: release
 
 # Tag push v* → test, build 5 standalone binaries, checksum them, cut a GitHub
 # Release, then publish the npm platform packages + main launcher (provenance).
-# Requires (repo settings): public repo; secret NPM_TOKEN; the @postctl org on
+# Requires (repo settings): public repo; secret NPM_TOKEN; the @post-ctl org on
 # npm with the token authorized to publish it.
 
 on:

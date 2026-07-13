@@ -40,12 +40,16 @@ prompts are allowed given the "no prompts in the write path" rule (CLAUDE.md).
 
 ### npm layout: launcher + optional platform packages (esbuild/biome pattern)
 
-- Main package `postctl` ships one **CJS Node launcher** (`bin/postctl.js`,
-  no Bun APIs) that resolves `@postctl/<platform>` via `require.resolve` and
-  re-execs the binary, forwarding argv/stdio/exit code.
-- Platform packages `@postctl/<platform>` declare `os`/`cpu`, carry one binary,
+- Main package `postctl` (unscoped — memorable install, name grabbed) ships one
+  **CJS Node launcher** (`bin/postctl.js`, no Bun APIs) that resolves
+  `@post-ctl/<platform>` via `require.resolve` and re-execs the binary,
+  forwarding argv/stdio/exit code.
+- Platform packages `@post-ctl/<platform>` declare `os`/`cpu`, carry one binary,
   and declare **no `bin` field** (would clash with the launcher symlink). They
   are `optionalDependencies` of the main package — npm installs only the match.
+  Scope is a **product-scope org** (`@post-ctl`, esbuild pattern). The scope is
+  invisible to users (never typed), so this is an operational choice, not a
+  branding one.
 - **No `postinstall` anywhere** (supply-chain posture; matches esbuild/biome).
 - `scripts/npm-pack.ts` assembles `dist/npm/` from compiled binaries, stamping
   every version from `package.json` (the single version source).
@@ -92,7 +96,7 @@ prompts are allowed given the "no prompts in the write path" rule (CLAUDE.md).
   simulated install layout under Node.
 - ⚠️ Live distribution requires operator setup the tooling cannot self-provision:
   repo **public** (unauthenticated Release download, npm provenance OIDC, free
-  CI), the **@postctl** npm org + `NPM_TOKEN`, and Cloudflare secrets. Until
+  CI), the **@post-ctl** npm org + `NPM_TOKEN`, and Cloudflare secrets. Until
   then the publish/deploy jobs are dormant.
 - ⚠️ Binary size (~61 MB) and 5 platform packages per release are the cost of an
   embedded runtime; the alternative (require Node/Bun) was rejected above.
