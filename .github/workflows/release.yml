@@ -2,8 +2,9 @@ name: release
 
 # Tag push v* → test, build 5 standalone binaries, checksum them, cut a GitHub
 # Release, then publish the npm platform packages + main launcher (provenance).
-# Requires (repo settings): public repo; secret NPM_TOKEN; the @post-ctl org on
-# npm with the token authorized to publish it.
+# Requires: public repo; npm OIDC trusted publisher configured on all six
+# packages (post-ctl + @post-ctl/<platform>) pointing at this repo/release.yml/
+# env prod. No NPM_TOKEN needed.
 
 on:
   push:
@@ -93,22 +94,26 @@ jobs:
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
-    environment: prod   # NPM_TOKEN lives in this environment's secrets
+    # OIDC trusted publishing — no NPM_TOKEN. Requires a trusted publisher
+    # (this repo + release.yml + env prod) configured on ALL SIX packages:
+    # post-ctl and each @post-ctl/<platform>. Provenance is generated
+    # automatically. The `prod` environment still gates the run.
+    environment: prod
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
         with: { bun-version: latest }
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           registry-url: "https://registry.npmjs.org"
+      # OIDC trusted publishing needs npm >= 11.5.1 (node 22 ships 10.x).
+      - run: npm install -g npm@latest
       - uses: actions/download-artifact@v4
         with: { name: binaries, path: dist }
       - name: Assemble npm tree
         run: bun run scripts/npm-pack.ts
-      - name: Publish platform packages, then main (provenance)
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Publish platform packages, then main (OIDC + provenance)
         run: |
           for p in dist/npm/@post-ctl/*; do
             npm publish "$p" --access public --provenance

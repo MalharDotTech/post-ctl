@@ -2,7 +2,7 @@
 # postctl installer — downloads a prebuilt standalone binary from the latest
 # GitHub Release, verifies its SHA-256, and installs it to ~/.local/bin.
 #
-#   curl -fsSL https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh | sh
+#   curl -fsSL https://post-ctl.pages.dev/install.sh | sh
 #
 # Overrides (env): POSTCTL_VERSION=v0.3.0   pin a specific release tag
 # No sudo, no self-update, no version flags beyond POSTCTL_VERSION. Boring.

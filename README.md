@@ -77,7 +77,7 @@ provider in `docs/platforms/`. Research and architecture decisions in
 
 ```sh
 # Standalone binary (macOS/Linux, arm64/x64) — no runtime needed
-curl -fsSL https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh | sh
+curl -fsSL https://post-ctl.pages.dev/install.sh | sh
 
 # npm (all platforms incl. Windows) — package is `post-ctl`, command is `postctl`
 npm i -g post-ctl       # or: npx post-ctl … / bunx post-ctl …

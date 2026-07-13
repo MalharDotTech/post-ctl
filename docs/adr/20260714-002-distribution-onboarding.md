@@ -97,9 +97,12 @@ prompts are allowed given the "no prompts in the write path" rule (CLAUDE.md).
   happy-path + checksum-mismatch abort proven); npm launcher verified against a
   simulated install layout under Node.
 - ⚠️ Live distribution requires operator setup the tooling cannot self-provision:
-  repo **public** (unauthenticated Release download, npm provenance OIDC, free
-  CI), the **@post-ctl** npm org + `NPM_TOKEN`, and Cloudflare secrets. Until
-  then the publish/deploy jobs are dormant.
+  repo **public** (unauthenticated Release download, provenance OIDC, free CI),
+  the **@post-ctl** npm org with an **OIDC trusted publisher** on all six
+  packages (no long-lived token), and Cloudflare secrets in the `prod`
+  environment. v0.3.0's npm packages were first published manually (the
+  bootstrapping token was a Publish-type → CI hit `EOTP`); trusted publishing
+  removes the token entirely for subsequent releases.
 - ⚠️ Binary size (~61 MB) and 5 platform packages per release are the cost of an
   embedded runtime; the alternative (require Node/Bun) was rejected above.
 - ⚠️ Version now lives in three files kept in sync by `version.test.ts`:
