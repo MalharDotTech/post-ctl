@@ -2,9 +2,9 @@ name: pages
 
 # Deploy the docs site to Cloudflare Pages on push to main. Bundles a copy of
 # scripts/install.sh alongside index.html so <pages-url>/install.sh resolves.
-# Requires (repo settings): secrets CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID,
-# and a Pages project named "postctl". Domain wiring is out of scope — the
-# default <project>.pages.dev URL is fine. Until secrets exist this is a no-op.
+# Requires: the `prod` GitHub environment holding secrets CLOUDFLARE_API_TOKEN +
+# CLOUDFLARE_ACCOUNT_ID, and a Cloudflare Pages project named "post-ctl". Domain
+# wiring is out of scope — the default post-ctl.pages.dev URL is fine.
 
 on:
   push:
@@ -21,8 +21,9 @@ permissions:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    # Skip when Cloudflare isn't configured yet (fork/pre-provision safety).
-    if: ${{ vars.CLOUDFLARE_ENABLED == 'true' }}
+    environment: prod   # CLOUDFLARE_* secrets live in this environment
+    # Don't run on forks (they lack the prod environment + secrets).
+    if: ${{ github.repository == 'MalharDotTech/postctl' }}
     steps:
       - uses: actions/checkout@v4
       - name: Assemble publish dir
@@ -35,4 +36,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy public --project-name=postctl
+          command: pages deploy public --project-name=post-ctl

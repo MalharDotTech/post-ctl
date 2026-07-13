@@ -92,6 +92,7 @@ jobs:
   publish-npm:
     needs: release
     runs-on: ubuntu-latest
+    environment: prod   # NPM_TOKEN lives in this environment's secrets
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
@@ -108,7 +109,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          for p in dist/npm/@postctl/*; do
+          for p in dist/npm/@post-ctl/*; do
             npm publish "$p" --access public --provenance
           done
           npm publish dist/npm/postctl --access public --provenance
