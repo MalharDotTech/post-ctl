@@ -5,6 +5,8 @@ import { authLogin, authStatus, authLogout } from "./commands/auth.ts";
 import { postCmd, validateCmd } from "./commands/post.ts";
 import { accountsCmd } from "./commands/accounts.ts";
 import { stagingCmd } from "./commands/staging.ts";
+import { doctorCmd } from "./commands/doctor.ts";
+import { setupCmd } from "./commands/setup.ts";
 import { PROVIDERS } from "./provider.ts";
 
 const VERSION = "0.2.0";  // keep in sync with package.json (freshness test)
@@ -14,6 +16,8 @@ const HELP = `postctl ${VERSION} — social posting for humans and AI agents
 Usage: postctl [--account <name>] <verb> [args] [flags]
 
 Verbs:
+  setup <provider>         Guided onboarding wizard (TTY only; youtube)
+  doctor                   Diagnose config/tokens/staging (offline; --online checks version)
   auth login <provider>    Authenticate an account (--account, --client-id, --client-secret)
   auth status              Per-account token dashboard (offline)
   auth logout              Delete stored token (--account)
@@ -74,6 +78,10 @@ async function main(): Promise<void> {
     case "providers":
       console.log(Object.keys(PROVIDERS).join("\n"));
       return;
+    case "setup":
+      return setupCmd(args);
+    case "doctor":
+      return doctorCmd(args);
     default:
       throw new ValidationError(`Unknown verb '${verb}'. Run: postctl --help`);
   }

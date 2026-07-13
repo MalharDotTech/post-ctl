@@ -8,7 +8,7 @@ export interface ParsedArgs {
   mediaUrls: string[];
 }
 
-const BOOLEAN_FLAGS = new Set(["debug", "dry-run", "help", "version", "readonly"]);
+const BOOLEAN_FLAGS = new Set(["debug", "dry-run", "help", "version", "readonly", "online"]);
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const positional: string[] = [];

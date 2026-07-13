@@ -31,7 +31,7 @@ runtime dependencies.
 
 - **Zero external dependencies.** Bun built-ins + Web APIs only.
 - **Exit codes**: 0 success · 1 validation/API failure · 4 auth required.
-  Only `cli.ts` (and `validateCmd`) set `process.exitCode`. Never `process.exit()`.
+  Only `cli.ts` (and `validateCmd`/`doctorCmd`) set `process.exitCode`. Never `process.exit()`.
 - **Credential-leak boundary**: no token/secret value in any thrown error,
   `--debug` output, or stdout — regression tests exist (oauth.test.ts,
   http.test.ts, cli.test.ts); extend them for every new secret-touching path.
