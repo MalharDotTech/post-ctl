@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod   # CLOUDFLARE_* secrets live in this environment
     # Don't run on forks (they lack the prod environment + secrets).
-    if: ${{ github.repository == 'MalharDotTech/postctl' }}
+    if: ${{ github.repository == 'MalharDotTech/post-ctl' }}
     steps:
       - uses: actions/checkout@v4
       - name: Assemble publish dir
