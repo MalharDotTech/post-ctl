@@ -26,6 +26,10 @@ jobs:
     if: ${{ github.repository == 'MalharDotTech/post-ctl' }}
     steps:
       - uses: actions/checkout@v4
+      # wrangler-action auto-detects the package manager from bun.lock and shells
+      # out to `bun`; make sure it's on PATH.
+      - uses: oven-sh/setup-bun@v2
+        with: { bun-version: latest }
       - name: Assemble publish dir
         run: |
           mkdir -p public
@@ -36,4 +40,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          packageManager: bun
           command: pages deploy public --project-name=post-ctl
