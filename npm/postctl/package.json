@@ -1,5 +1,5 @@
 {
-  "name": "postctl",
+  "name": "post-ctl",
   "version": "0.0.0",
   "description": "The missing CLI for social posting. YouTube, Instagram, Facebook, X, LinkedIn. Built for humans and AI agents.",
   "bin": {

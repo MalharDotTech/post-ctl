@@ -40,7 +40,9 @@ prompts are allowed given the "no prompts in the write path" rule (CLAUDE.md).
 
 ### npm layout: launcher + optional platform packages (esbuild/biome pattern)
 
-- Main package `postctl` (unscoped — memorable install, name grabbed) ships one
+- Main package `post-ctl` (unscoped `postctl` was rejected by npm's typosquat
+  filter as too similar to postcss/posthtml, so the package is `post-ctl`; the
+  invoked command stays `postctl` via the `bin` field) ships one
   **CJS Node launcher** (`bin/postctl.js`, no Bun APIs) that resolves
   `@post-ctl/<platform>` via `require.resolve` and re-execs the binary,
   forwarding argv/stdio/exit code.

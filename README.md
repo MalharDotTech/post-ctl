@@ -79,8 +79,8 @@ provider in `docs/platforms/`. Research and architecture decisions in
 # Standalone binary (macOS/Linux, arm64/x64) — no runtime needed
 curl -fsSL https://raw.githubusercontent.com/MalharDotTech/post-ctl/main/scripts/install.sh | sh
 
-# npm (all platforms incl. Windows)
-npm i -g postctl        # or: npx postctl … / bunx postctl …
+# npm (all platforms incl. Windows) — package is `post-ctl`, command is `postctl`
+npm i -g post-ctl       # or: npx post-ctl … / bunx post-ctl …
 ```
 
 Then run `postctl setup youtube` for guided onboarding, or `postctl doctor`
